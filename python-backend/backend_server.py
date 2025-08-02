@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Elephant Identification System - Backend Server
+Airavat - Backend Server
 Handles both Siamese Network and YOLOv8 model inference
 """
 
@@ -118,7 +118,8 @@ def get_model_info():
             'gpu_available': torch.cuda.is_available(),
             'device': str(torch.cuda.get_device_name(0)) if torch.cuda.is_available() else 'CPU',
             'backend_version': '1.0.0',
-            'models_ready': bool(siamese_processor or yolo_processor)
+            'models_ready': bool(siamese_processor or yolo_processor),
+            'app_name': 'Airavat'
         }
         return jsonify(info)
     except Exception as e:
@@ -279,7 +280,7 @@ def process_batch():
         # Generate download URL if file was created
         download_url = None
         if results.get('output_file'):
-            download_filename = f"batch_results_{uuid.uuid4().hex[:8]}.zip"
+            download_filename = f"airavat_results_{uuid.uuid4().hex[:8]}.zip"
             download_path = os.path.join(app.config['RESULTS_FOLDER'], download_filename)
             shutil.move(results['output_file'], download_path)
             download_url = f"/api/download/{download_filename}"
@@ -325,6 +326,8 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
+        'app_name': 'Airavat',
+        'version': '1.0.0',
         'models_loaded': {
             'siamese': bool(siamese_processor),
             'yolo': bool(yolo_processor),
@@ -371,7 +374,7 @@ def cleanup_temp_files():
         logger.error(f"Error during cleanup: {e}")
 
 if __name__ == '__main__':
-    logger.info("🐘 Starting Elephant Identification System Backend v1.0.0")
+    logger.info("🐘 Starting Airavat Backend v1.0.0")
 
     # Initialize models
     if not initialize_models():

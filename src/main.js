@@ -19,7 +19,8 @@ function createWindow() {
     },
     icon: path.join(__dirname, '../assets/icon.png'),
     show: false,
-    titleBarStyle: 'default'
+    titleBarStyle: 'default',
+    title: 'Airavat - AI Elephant Identification'
   });
 
   mainWindow.loadFile('src/frontend/index.html');
@@ -145,8 +146,8 @@ app.on('before-quit', () => {
 // Handle protocol for development
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('elephant-id', process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient('airavat', process.execPath, [path.resolve(process.argv[1])]);
   }
 } else {
-  app.setAsDefaultProtocolClient('elephant-id');
+  app.setAsDefaultProtocolClient('airavat');
 }

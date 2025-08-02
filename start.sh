@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Elephant Identification System v1.0.0 - Startup Script
+# Airavat v1.0.0 - Startup Script
 # This script handles environment setup and launches the application
 
-echo "🐘 Starting Elephant Identification System v1.0.0"
-echo "================================================"
+echo "🐘 Starting Airavat v1.0.0"
+echo "==========================="
 
 # Set environment variables for graphics compatibility
 export LIBGL_ALWAYS_SOFTWARE=1
@@ -160,7 +160,7 @@ check_model_files() {
 
 # Start the application
 start_application() {
-    print_status "Starting Elephant Identification System..."
+    print_status "Starting Airavat..."
 
     # Start Python backend in background
     print_status "Starting Python backend server..."
@@ -197,7 +197,7 @@ start_application() {
     print_status "Backend PID: $BACKEND_PID"
     print_status "Frontend PID: $FRONTEND_PID"
     print_status ""
-    print_status "🎉 Elephant Identification System is now running!"
+    print_status "🎉 Airavat is now running!"
     print_status "📱 The application window should open automatically"
     print_status "🌐 If the window doesn't open, try: http://localhost:3001"
     print_status ""
@@ -211,7 +211,7 @@ start_application() {
 # Main execution flow
 main() {
     echo ""
-    print_status "Initializing Elephant Identification System..."
+    print_status "Initializing Airavat..."
     echo ""
 
     # Run all checks and setup
@@ -237,7 +237,7 @@ main() {
 
 # Help function
 show_help() {
-    echo "🐘 Elephant Identification System v1.0.0"
+    echo "🐘 Airavat v1.0.0"
     echo ""
     echo "Usage: $0 [options]"
     echo ""

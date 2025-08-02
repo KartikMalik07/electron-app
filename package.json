@@ -1,94 +1,244 @@
 {
-  "name": "elephant-identification-system",
+  "name": "airavat",
   "version": "1.0.0",
-  "description": "AI-powered Asian Elephant Individual Identification System using Siamese Neural Networks and YOLOv8",
+  "description": "Airavat - AI-powered Individual Asian Elephant Identification using Siamese Neural Networks and YOLOv8",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "concurrently \"npm run backend\" \"electron .\"",
-    "backend": "cd python-backend && python backend_server.py",
-    "build": "electron-builder",
+    "dev": "NODE_ENV=development electron .",
+    "build": "npm run build-all",
+    "build-all": "npm run build-win && npm run build-mac && npm run build-linux",
     "build-win": "electron-builder --win",
     "build-mac": "electron-builder --mac",
     "build-linux": "electron-builder --linux",
+    "build-win-portable": "electron-builder --win --config.win.target=portable",
+    "build-win-installer": "electron-builder --win --config.win.target=nsis",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps",
+    "clean": "rimraf dist/ node_modules/ python-backend/venv/ python-backend/temp_*/ python-backend/*.log",
+    "setup-python": "cd python-backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "test": "echo \"No tests specified\" && exit 0",
+    "lint": "eslint src/ --ext .js",
+    "prepare-release": "npm run clean && npm install && npm run build-all",
+    "release-v1": "npm version 1.0.0 && git tag v1.0.0 && git push origin v1.0.0",
+    "release-v2": "npm version 2.0.0 && git tag v2.0.0 && git push origin v2.0.0"
   },
   "keywords": [
     "elephant",
     "identification",
     "AI",
-    "computer-vision",
-    "conservation",
+    "machine-learning",
     "siamese-network",
     "yolov8",
-    "desktop-app"
+    "computer-vision",
+    "wildlife",
+    "conservation",
+    "pytorch",
+    "electron"
   ],
-  "author": "Your Name",
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com",
+    "url": "https://github.com/yourusername"
+  },
   "license": "MIT",
-  "homepage": "https://github.com/yourusername/elephant-identification-system",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/elephant-identification-system.git"
+    "url": "https://github.com/yourusername/electron-app.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/elephant-identification-system/issues"
+    "url": "https://github.com/yourusername/electron-app/issues"
   },
+  "homepage": "https://github.com/yourusername/electron-app#readme",
   "devDependencies": {
-    "electron": "^27.0.0",
-    "electron-builder": "^24.6.4",
-    "concurrently": "^8.2.0"
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.56.0",
+    "rimraf": "^5.0.5"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "multer": "^1.4.5-lts.1",
-    "cors": "^2.8.5",
-    "archiver": "^6.0.1",
-    "fs-extra": "^11.1.1",
-    "uuid": "^9.0.0"
+    "fs-extra": "^11.2.0"
   },
   "build": {
-    "appId": "com.yourcompany.elephant-identification",
-    "productName": "Elephant Identification System",
+    "appId": "com.yourcompany.airavat",
+    "productName": "Airavat",
+    "copyright": "Copyright © 2024 Your Company",
     "directories": {
-      "output": "dist"
+      "output": "dist/",
+      "buildResources": "assets/"
     },
     "files": [
       "src/**/*",
       "python-backend/**/*",
-      "!python-backend/__pycache__",
-      "!python-backend/**/__pycache__",
-      "!python-backend/venv",
-      "!python-backend/**/*.pyc",
-      "models/**/*",
-      "package.json"
+      "assets/**/*",
+      "!python-backend/venv/",
+      "!python-backend/temp_*/",
+      "!python-backend/*.log",
+      "!python-backend/models/*.pth",
+      "!python-backend/models/*.pt",
+      "!**/*.pyc",
+      "!**/__pycache__/",
+      "node_modules/**/*"
     ],
-    "extraResources": [
+    "extraFiles": [
       {
-        "from": "python-backend",
-        "to": "python-backend"
+        "from": "start.sh",
+        "to": "start.sh",
+        "filter": ["**/*"]
       },
       {
-        "from": "models",
-        "to": "models"
+        "from": "README.md",
+        "to": "README.md"
       }
     ],
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "publisherName": "Your Company",
+      "verifyUpdateCodeSignature": false,
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ]
     },
     "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.education",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ]
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Education",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ]
     },
-    "publish": {
-      "provider": "github",
-      "owner": "yourusername",
-      "repo": "elephant-identification-system"
-    }
-  }
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Airavat",
+      "include": "assets/installer.nsh",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": true
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "icon": "assets/icon.icns",
+      "background": "assets/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 140,
+          "y": 180,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 180,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "depends": ["python3", "python3-pip"]
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "yourusername",
+        "repo": "electron-app",
+        "private": false,
+        "releaseType": "release"
+      }
+    ]
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
 }
