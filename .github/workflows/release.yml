@@ -56,7 +56,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: npm run build-win
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
     - name: Build Electron app (macOS)
       if: matrix.os == 'macos-latest'
@@ -566,35 +566,3 @@ jobs:
 
         **Full Changelog**: https://github.com/yourusername/electron-app/commits/v${{ steps.get_version.outputs.VERSION }}
         EOF
-
-    - name: Upload release notes
-      uses: actions/upload-artifact@v3
-      with:
-        name: release-notes
-        path: release_notes.md
-
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        release_name: Release ${{ steps.get_version.outputs.VERSION }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload artifacts to release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        asset_path: |
-          windows-build/*.exe
-          windows-build/*.msi
-          macos-build/*.dmg
-          linux-build/*.AppImage
-          linux-build/*.deb
-          model-archives/*
-          model-instructions/*
-          release_notes.md
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
