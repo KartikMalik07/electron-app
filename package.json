@@ -1,0 +1,94 @@
+{
+  "name": "elephant-identification-system",
+  "version": "1.0.0",
+  "description": "AI-powered Asian Elephant Individual Identification System using Siamese Neural Networks and YOLOv8",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run backend\" \"electron .\"",
+    "backend": "cd python-backend && python backend_server.py",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [
+    "elephant",
+    "identification",
+    "AI",
+    "computer-vision",
+    "conservation",
+    "siamese-network",
+    "yolov8",
+    "desktop-app"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/elephant-identification-system",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/elephant-identification-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/elephant-identification-system/issues"
+  },
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "archiver": "^6.0.1",
+    "fs-extra": "^11.1.1",
+    "uuid": "^9.0.0"
+  },
+  "build": {
+    "appId": "com.yourcompany.elephant-identification",
+    "productName": "Elephant Identification System",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "python-backend/**/*",
+      "!python-backend/__pycache__",
+      "!python-backend/**/__pycache__",
+      "!python-backend/venv",
+      "!python-backend/**/*.pyc",
+      "models/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "python-backend",
+        "to": "python-backend"
+      },
+      {
+        "from": "models",
+        "to": "models"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "yourusername",
+      "repo": "elephant-identification-system"
+    }
+  }
+}
