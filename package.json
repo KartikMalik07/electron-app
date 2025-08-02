@@ -7,11 +7,12 @@
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
     "build": "npm run build-win",
-    "build-win": "electron-builder --win",
-    "build-win-portable": "electron-builder --win --config.win.target=portable",
-    "build-win-installer": "electron-builder --win --config.win.target=nsis",
+    "build-win": "electron-builder --win --publish=never",
+    "build-win-portable": "electron-builder --win --config.win.target=portable --publish=never",
+    "build-win-installer": "electron-builder --win --config.win.target=nsis --publish=never",
+    "build-and-publish": "electron-builder --win --publish=always",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder",
+    "dist": "electron-builder --publish=never",
     "postinstall": "electron-builder install-app-deps",
     "clean": "rimraf dist/ node_modules/ python-backend/venv/ python-backend/temp_*/ python-backend/*.log",
     "setup-python": "cd python-backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
@@ -35,19 +36,19 @@
     "electron"
   ],
   "author": {
-    "name": "KartikMalik07",
-    "email": "twgkartik@gmail.com",
-    "url": "https://github.com/KartikMalik07"
+    "name": "Your Name",
+    "email": "your.email@example.com",
+    "url": "https://github.com/yourusername"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/KartikMalik07/electron-app.git"
+    "url": "https://github.com/yourusername/electron-app.git"
   },
   "bugs": {
-    "url": "https://github.com/KartikMalik07/electron-app/issues"
+    "url": "https://github.com/yourusername/electron-app/issues"
   },
-  "homepage": "https://github.com/KartikMalik07/electron-app#readme",
+  "homepage": "https://github.com/yourusername/electron-app#readme",
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
@@ -125,16 +126,7 @@
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "yourusername",
-        "repo": "electron-app",
-        "private": false,
-        "releaseType": "release"
-      }
-    ]
+    }
   },
   "engines": {
     "node": ">=16.0.0",
