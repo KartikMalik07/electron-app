@@ -1,0 +1,39 @@
+# Core ML and Computer Vision
+torch
+torchvision
+opencv-python
+numpy
+Pillow
+
+# YOLOv8 and Object Detection
+ultralytics
+supervision
+
+# EfficientNet for Siamese Network
+efficientnet-pytorch
+
+# Web Framework and API
+flask
+flask-cors
+werkzeug
+
+# Image Processing and Utilities
+scikit-image
+matplotlib
+seaborn
+
+# Data Handling
+pandas
+scikit-learn
+
+# File and System Operations
+pathlib2
+tqdm
+psutil
+
+# Optional GPU Support
+# Uncomment if you have CUDA GPU:
+# torch-audio
+# torchaudio
+
+# Development and Debugging (optional)

@@ -1,0 +1,42 @@
+# Node.js dependencies
+node_modules/
+
+# Electron build output
+dist/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Python virtual environments
+venv/
+env/
+.python-version
+
+# Model weights (large files, download separately)
+*.pth
+*.pt
+python-backend/models/siamese_best_model.pth
+python-backend/models/yolo_best_model.pt
+
+# Editor config files
+.vscode/
+.idea/
+
+# Shell history and environment configs (if added by mistake)
+*.sh~
+.env
+.env.*
+
+# macOS Icon file
+assets/icon.icns
+
+# Backup files
+*~

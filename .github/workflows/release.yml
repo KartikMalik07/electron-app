@@ -1,0 +1,301 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Node.js dependencies
+      run: npm ci
+
+    - name: Install Python dependencies
+      run: |
+        cd python-backend
+        pip install -r requirements.txt
+
+    - name: Build Electron app (Windows)
+      if: matrix.os == 'windows-latest'
+      run: npm run build-win
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Electron app (macOS)
+      if: matrix.os == 'macos-latest'
+      run: npm run build-mac
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Electron app (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: npm run build-linux
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Windows artifacts
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-build
+        path: dist/*.exe
+
+    - name: Upload macOS artifacts
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-build
+        path: dist/*.dmg
+
+    - name: Upload Linux artifacts
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-build
+        path: dist/*.AppImage
+
+  create-model-archives:
+    name: Create Model File Archives
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create model archives placeholder
+      run: |
+        mkdir -p model-releases
+
+        # Create placeholder files with download instructions
+        cat > model-releases/DOWNLOAD_MODELS.txt << EOF
+        🐘 Elephant Identification System v1.0.0 - AI Models
+
+        Due to GitHub file size limitations, the trained model files are hosted separately.
+
+        📥 Download the model files from:
+
+        1. Siamese Network Model (siamese_best_model.pth):
+           Size: ~100MB
+           Download: [Your model hosting URL here]
+
+        2. YOLOv8 Detection Model (yolo_best_model.pt):
+           Size: ~12MB
+           Download: [Your model hosting URL here]
+
+        📁 Installation Instructions:
+
+        1. Download both model files
+        2. Create a 'models' folder in 'python-backend/'
+        3. Place the files in python-backend/models/:
+           - python-backend/models/siamese_best_model.pth
+           - python-backend/models/yolo_best_model.pt
+        4. Run the application
+
+        🔗 Alternative hosting options:
+        - Google Drive with public sharing
+        - Dropbox public links
+        - Hugging Face Model Hub
+        - Your institutional repository
+
+        ⚠️ Important: Ensure model files match the expected architecture
+        defined in the code. Incompatible models will cause errors.
+
+        For questions about models, please open an issue on GitHub.
+        EOF
+
+        # Create sample model architecture info
+        cat > model-releases/MODEL_INFO.json << EOF
+        {
+          "version": "1.0.0",
+          "models": {
+            "siamese_network": {
+              "filename": "siamese_best_model.pth",
+              "architecture": "SiameseNetwork with EfficientNet-B0",
+              "input_size": [224, 224, 3],
+              "embedding_dim": 128,
+              "dataset_size": 266,
+              "expected_size_mb": 100
+            },
+            "yolov8_detection": {
+              "filename": "yolo_best_model.pt",
+              "architecture": "YOLOv8n/s/m custom trained",
+              "input_size": [640, 640, 3],
+              "num_classes": 1,
+              "class_names": ["elephant"],
+              "expected_size_mb": 12
+            }
+          },
+          "training_info": {
+            "siamese_dataset": "266 individual Asian elephants",
+            "yolo_dataset": "Custom elephant detection dataset",
+            "training_framework": "PyTorch + Ultralytics",
+            "last_updated": "2024-01-01"
+          }
+        }
+        EOF
+
+    - name: Upload model info
+      uses: actions/upload-artifact@v3
+      with:
+        name: model-info
+        path: model-releases/
+
+  release:
+    name: Create Release
+    needs: [build, create-model-archives]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Get version from tag
+      id: get_version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release Notes
+      run: |
+        cat > release_notes.md << EOF
+        # 🐘 Elephant Identification System ${{ steps.get_version.outputs.VERSION }}
+
+        ## What's New
+
+        ### ✨ Features
+        - **Siamese Neural Network**: Individual elephant identification using ear patterns
+        - **YOLOv8 Detection**: Real-time elephant detection and localization
+        - **Batch Processing**: Process up to 200GB of images with automatic grouping
+        - **Cross-platform Desktop App**: Native experience on Windows, macOS, and Linux
+        - **Completely Offline**: No internet required after setup
+
+        ### 🔧 Technical Details
+        - **Models**: EfficientNet-B0 Siamese Network + Custom YOLOv8
+        - **Dataset**: 266+ individual Asian elephants
+        - **Framework**: Electron + Python + PyTorch
+        - **Performance**: GPU acceleration with CUDA support
+
+        ## 📥 Installation
+
+        ### 1. Download Application
+        Choose the appropriate version for your operating system:
+
+        - **Windows**: \`Elephant-Identification-System-${{ steps.get_version.outputs.VERSION }}.exe\`
+        - **macOS**: \`Elephant-Identification-System-${{ steps.get_version.outputs.VERSION }}.dmg\`
+        - **Linux**: \`Elephant-Identification-System-${{ steps.get_version.outputs.VERSION }}.AppImage\`
+
+        ### 2. Download AI Models
+        **⚠️ IMPORTANT**: Download the AI model files separately (see DOWNLOAD_MODELS.txt)
+
+        The model files are required for the application to function:
+        - \`siamese_best_model.pth\` (~100MB) - For individual identification
+        - \`yolo_best_model.pt\` (~12MB) - For elephant detection
+
+        Place these files in \`python-backend/models/\` after installation.
+
+        ### 3. System Requirements
+        - **RAM**: 8GB minimum, 16GB recommended
+        - **Storage**: 10GB free space
+        - **OS**: Windows 10+, macOS 10.14+, or Linux (Ubuntu 18.04+)
+        - **Optional**: NVIDIA GPU for acceleration
+
+        ## 🚀 Quick Start
+
+        1. Install the application for your platform
+        2. Download and place model files in the correct directory
+        3. Run the application
+        4. Check system requirements on the Home tab
+        5. Start identifying elephants!
+
+        ## 📖 Documentation
+
+        - **Full Documentation**: See README.md in the repository
+        - **Troubleshooting**: Check the GitHub Issues for common problems
+        - **API Reference**: See the repository wiki
+
+        ## 🐛 Known Issues
+
+        - First startup may take longer while models load
+        - Large batch processing requires adequate RAM
+        - GPU acceleration requires proper CUDA setup
+
+        ## 🤝 Contributing
+
+        We welcome contributions! Please see CONTRIBUTING.md for guidelines.
+
+        ---
+
+        **Full Changelog**: https://github.com/yourusername/elephant-identification-system/compare/v0.9.0...${{ steps.get_version.outputs.VERSION }}
+        EOF
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: "Elephant Identification System ${{ steps.get_version.outputs.VERSION }}"
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        files: |
+          windows-build/*
+          macos-build/*
+          linux-build/*
+          model-info/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-latest-release:
+    name: Update Latest Release Info
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Update README with latest release
+      run: |
+        # Update README.md to point to latest release
+        sed -i 's|releases/tag/v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/${{ steps.get_version.outputs.VERSION }}|g' README.md
+
+    - name: Commit README update
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add README.md
+        git commit -m "Update README with release ${{ steps.get_version.outputs.VERSION }}" || exit 0
+        git push
