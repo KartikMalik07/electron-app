@@ -26,8 +26,8 @@ jobs:
 
     strategy:
       matrix:
-        # For v1.0.0, only build Windows. For v2.0.0+, build all platforms
-        os: ${{ (startsWith(github.ref, 'refs/tags/v1.') || github.event.inputs.version == 'v1.0.0') && fromJSON('["windows-latest"]') || fromJSON('["windows-latest", "macos-latest", "ubuntu-latest"]') }}
+        # Only build for Windows
+        os: [windows-latest]
 
     steps:
     - name: Checkout repository
@@ -98,11 +98,10 @@ jobs:
   create-model-archives:
     name: Create Model File Archives
     runs-on: ubuntu-latest
-    # Only run for v2.0.0+ or when explicitly requested
+    # Only run when models should be included
     if: |
-      !startsWith(github.ref, 'refs/tags/v1.') &&
-      github.event.inputs.version != 'v1.0.0' &&
-      (github.event.inputs.include_models == 'true' || startsWith(github.ref, 'refs/tags/v2.'))
+      github.event.inputs.include_models == 'true' ||
+      (!startsWith(github.ref, 'refs/tags/v1.') && github.event.inputs.version != 'v1.0.0')
 
     steps:
     - name: Checkout repository
@@ -233,10 +232,11 @@ jobs:
   create-download-instructions:
     name: Create Model Download Instructions
     runs-on: ubuntu-latest
-    # Only run for v1.0.0 (when models are not included)
+    # Only run for v1.0.0 or when models are not included
     if: |
       startsWith(github.ref, 'refs/tags/v1.') ||
-      github.event.inputs.version == 'v1.0.0'
+      github.event.inputs.version == 'v1.0.0' ||
+      github.event.inputs.include_models != 'true'
 
     steps:
     - name: Checkout repository
@@ -408,14 +408,6 @@ jobs:
         4. **Check Status**: Go to Home tab to verify system requirements
         5. **Note**: AI features will show "Model Not Available" until models are added
 
-        ## 🔄 Upgrade Path
-
-        **v2.0.0 Coming Soon** will include:
-        - 🎯 **Pre-trained AI models included**
-        - 🌍 **Cross-platform support** (macOS, Linux)
-        - ⚡ **Enhanced performance optimizations**
-        - 📊 **Advanced batch processing features**
-
         ## 🔧 System Requirements
 
         ### Minimum Requirements
@@ -461,9 +453,8 @@ jobs:
 
         ## 🎯 What's Next?
 
-        **v2.0.0 Release Plan:**
+        **Future Release Plans:**
         - Include complete AI model package
-        - Cross-platform releases (macOS, Linux)
         - Enhanced batch processing
         - Performance optimizations
         - Advanced elephant identification features

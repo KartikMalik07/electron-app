@@ -6,11 +6,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
-    "build": "npm run build-all",
-    "build-all": "npm run build-win && npm run build-mac && npm run build-linux",
+    "build": "npm run build-win",
+    "build-all": "npm run build-win",
     "build-win": "electron-builder --win",
-    "build-mac": "electron-builder --mac",
-    "build-linux": "electron-builder --linux",
     "build-win-portable": "electron-builder --win --config.win.target=portable",
     "build-win-installer": "electron-builder --win --config.win.target=nsis",
     "pack": "electron-builder --dir",
@@ -92,36 +90,6 @@
         "to": "README.md"
       }
     ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ],
-      "icon": "assets/icon.ico",
-      "publisherName": "Your Company",
-      "verifyUpdateCodeSignature": false,
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-      "extraResources": [
-        {
-          "from": "python-backend/",
-          "to": "python-backend/",
-          "filter": [
-            "**/*",
-            "!venv/",
-            "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
-          ]
-        }
-      ]
-    },
     "mac": {
       "target": [
         {
@@ -160,6 +128,36 @@
       ],
       "icon": "assets/icon.png",
       "category": "Education",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "publisherName": "Your Company",
+      "verifyUpdateCodeSignature": false,
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
       "extraResources": [
         {
