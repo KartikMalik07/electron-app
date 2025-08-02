@@ -10,14 +10,12 @@ on:
         description: 'Version to release (e.g., v1.0.0)'
         required: true
         default: 'v1.0.0'
-      include_models:
-        description: 'Include model files (.pth files)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+
+# Add permissions for GITHUB_TOKEN
+permissions:
+  contents: write
+  discussions: write
+  packages: write
 
 jobs:
   build:
@@ -49,6 +47,14 @@ jobs:
 
     - name: Build Electron app (Windows)
       run: npm run build-win
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: List dist directory contents (Debug)
+      run: |
+        echo "Contents of dist directory:"
+        dir dist /s
+      shell: cmd
 
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
@@ -57,149 +63,12 @@ jobs:
         path: |
           dist/*.exe
           dist/*.msi
+          dist/*.blockmap
         retention-days: 30
 
-  create-model-archives:
-    name: Create Model File Archives
-    runs-on: ubuntu-latest
-    if: |
-      github.event.inputs.include_models == 'true' ||
-      (!startsWith(github.ref, 'refs/tags/v1.') && github.event.inputs.version != 'v1.0.0')
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Create model archives with actual files
-      run: |
-        mkdir -p model-releases
-
-        # Check if model files exist in the repo
-        if [ -f "python-backend/models/siamese_best_model.pth" ] && [ -f "python-backend/models/yolo_best_model.pt" ]; then
-          echo "Model files found, creating archives..."
-
-          # Create ZIP archive with model files
-          cd python-backend/models/
-          zip -r ../../model-releases/airavat-models-v2.0.0.zip *.pth *.pt
-          cd ../../
-
-          # Create individual model archives
-          zip -j model-releases/siamese-model-v2.0.0.zip python-backend/models/siamese_best_model.pth
-          zip -j model-releases/yolo-model-v2.0.0.zip python-backend/models/yolo_best_model.pt
-
-          # Create model info file
-          cat > model-releases/MODEL_INFO.json << EOF
-        {
-          "version": "2.0.0",
-          "models": {
-            "siamese_network": {
-              "filename": "siamese_best_model.pth",
-              "architecture": "SiameseNetwork with EfficientNet-B0",
-              "input_size": [224, 224, 3],
-              "embedding_dim": 128,
-              "dataset_size": 266,
-              "file_size_mb": $(du -m python-backend/models/siamese_best_model.pth | cut -f1)
-            },
-            "yolov8_detection": {
-              "filename": "yolo_best_model.pt",
-              "architecture": "YOLOv8 custom trained",
-              "input_size": [640, 640, 3],
-              "num_classes": 1,
-              "class_names": ["elephant"],
-              "file_size_mb": $(du -m python-backend/models/yolo_best_model.pt | cut -f1)
-            }
-          },
-          "training_info": {
-            "siamese_dataset": "266 individual Asian elephants",
-            "yolo_dataset": "Custom elephant detection dataset",
-            "training_framework": "PyTorch + Ultralytics",
-            "last_updated": "$(date -I)"
-          },
-          "installation": {
-            "instructions": "Extract model files to python-backend/models/ directory",
-            "required_for": "Full AI functionality"
-          }
-        }
-        EOF
-
-          # Create installation instructions
-          cat > model-releases/INSTALLATION.md << EOF
-        # 🐘 Airavat - Model Installation
-
-        ## Quick Start
-
-        1. **Download the model archive**: \`airavat-models-v2.0.0.zip\`
-        2. **Extract to your installation**: Place files in \`python-backend/models/\`
-        3. **Verify installation**: Both \`.pth\` and \`.pt\` files should be present
-        4. **Launch application**: Models will be loaded automatically
-
-        ## File Structure
-
-        After extraction, your directory should look like:
-        \`\`\`
-        python-backend/
-        ├── models/
-        │   ├── siamese_best_model.pth    # Siamese Network (Individual ID)
-        │   └── yolo_best_model.pt        # YOLOv8 (Detection)
-        └── ...
-        \`\`\`
-
-        ## Model Information
-
-        - **Siamese Network**: ~100MB - Individual elephant identification
-        - **YOLOv8 Model**: ~12MB - Elephant detection and localization
-        - **Dataset**: Trained on 266 individual Asian elephants
-        - **Framework**: PyTorch + Ultralytics
-
-        ## Troubleshooting
-
-        - Ensure model files are not corrupted (check file sizes)
-        - Verify Python dependencies are installed (\`pip install -r requirements.txt\`)
-        - Check that CUDA is available for GPU acceleration (optional)
-
-        For support, visit: https://github.com/yourusername/electron-app/issues
-        EOF
-
-        else
-          echo "Model files not found in repository. Creating placeholder instructions..."
-
-          # Create download instructions when models aren't in repo yet
-          cat > model-releases/DOWNLOAD_MODELS.txt << EOF
-        🐘 Airavat v2.0.0 - AI Models
-
-        📥 IMPORTANT: Model files are required for v2.0.0+
-
-        The trained model files should be available as release assets:
-        - siamese-model-v2.0.0.zip (~100MB)
-        - yolo-model-v2.0.0.zip (~12MB)
-        - airavat-models-v2.0.0.zip (Combined package)
-
-        📁 Installation:
-        1. Download the model archives from this release
-        2. Extract to: python-backend/models/
-        3. Verify files: siamese_best_model.pth + yolo_best_model.pt
-        4. Run the application
-
-        ⚠️ The application requires these models to function properly.
-        Without them, only basic UI features will work.
-        EOF
-
-        fi
-
-    - name: Upload model archives
-      uses: actions/upload-artifact@v4
-      with:
-        name: model-archives
-        path: model-releases/
-        retention-days: 90
-
-  create-download-instructions:
+  create-model-instructions:
     name: Create Model Download Instructions
     runs-on: ubuntu-latest
-    if: |
-      startsWith(github.ref, 'refs/tags/v1.') ||
-      github.event.inputs.version == 'v1.0.0' ||
-      github.event.inputs.include_models != 'true'
 
     steps:
     - name: Checkout repository
@@ -240,7 +109,7 @@ jobs:
         - Full AI functionality out-of-the-box
         - No additional downloads required
 
-        For questions: https://github.com/KartikMalik07/electron-app/issues
+        For questions: https://github.com/yourusername/electron-app/issues
         EOF
 
         cat > model-instructions/README_v1.md << EOF
@@ -308,12 +177,10 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build]
+    needs: [build, create-model-instructions]
     runs-on: ubuntu-latest
     if: always() && needs.build.result == 'success'
 
-    outputs:
-      VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -324,6 +191,11 @@ jobs:
         merge-multiple: true
         path: ./artifacts
 
+    - name: List downloaded artifacts (Debug)
+      run: |
+        echo "Downloaded artifacts:"
+        find ./artifacts -type f -ls
+
     - name: Get version from tag or input
       id: get_version
       run: |
@@ -333,18 +205,7 @@ jobs:
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         fi
 
-    - name: Determine if this is v1.0.0 release
-      id: version_check
-      run: |
-        VERSION="${{ steps.get_version.outputs.VERSION }}"
-        if [[ "$VERSION" == "v1.0.0" ]]; then
-          echo "IS_V1=true" >> $GITHUB_OUTPUT
-        else
-          echo "IS_V1=false" >> $GITHUB_OUTPUT
-        fi
-
     - name: Create Release Notes for v1.0.0
-      if: steps.version_check.outputs.IS_V1 == 'true'
       run: |
         cat > release_notes.md << EOF
         # 🐘 Airavat v1.0.0 (Windows Release)
@@ -434,96 +295,6 @@ jobs:
         **Full Changelog**: https://github.com/yourusername/electron-app/commits/v1.0.0
         EOF
 
-    - name: Create Release Notes for v2.0.0+
-      if: steps.version_check.outputs.IS_V1 == 'false'
-      run: |
-        cat > release_notes.md << EOF
-        # 🐘 Airavat ${{ steps.get_version.outputs.VERSION }}
-
-        ## 🎉 Complete AI Package Release!
-
-        This release includes **everything you need** for elephant identification - no additional downloads required!
-
-        ## ✨ What's New
-
-        ### 🤖 **Included AI Models**
-        - ✅ **Siamese Neural Network** (siamese_best_model.pth) - Individual identification
-        - ✅ **YOLOv8 Detection Model** (yolo_best_model.pt) - Real-time detection
-        - ✅ **Complete Dataset Integration** - 266 individual elephants
-        - ✅ **Zero Additional Setup** - Models work out-of-the-box
-
-        ### ⚡ **Enhanced Features**
-        - **GPU Acceleration**: Automatic CUDA detection and usage
-        - **Batch Processing**: Process thousands of images efficiently
-        - **Advanced Analytics**: Detailed confidence scoring and similarity analysis
-        - **Real-time Detection**: Fast YOLOv8-powered elephant detection
-
-        ## 📥 Installation
-
-        ### Windows
-        - **Installer**: \`Airavat-Setup-${{ steps.get_version.outputs.VERSION }}.exe\`
-        - **Portable**: \`Airavat-Portable-${{ steps.get_version.outputs.VERSION }}.exe\`
-
-        ## 🚀 Quick Start
-
-        1. **Download** the Windows installer
-        2. **Install** using the setup wizard
-        3. **Launch** the application
-        4. **Start Identifying** - AI models load automatically!
-
-        No additional setup, downloads, or configuration required!
-
-        ## 🔧 Technical Specifications
-
-        ### AI Models Included
-        - **Siamese Network**: EfficientNet-B0 backbone, 128-dim embeddings
-        - **YOLOv8**: Custom-trained on elephant dataset
-        - **Dataset**: 266 individual Asian elephants
-        - **Accuracy**: 95%+ identification accuracy
-        - **Speed**: Real-time processing on modern hardware
-
-        ### Performance
-        - **CPU Processing**: Works on any modern computer
-        - **GPU Acceleration**: Automatic CUDA utilization
-        - **Memory Usage**: 8GB RAM minimum, 16GB recommended
-        - **Storage**: 500MB application + models
-
-        ## 🆕 New Features
-
-        - **One-Click Setup**: Complete installation with models
-        - **Enhanced UI**: Improved user experience and performance
-        - **Advanced Batch Processing**: Handle large datasets efficiently
-        - **Real-time Preview**: See detection results instantly
-        - **Detailed Analytics**: Confidence scores and similarity metrics
-
-        ## 🔧 System Requirements
-
-        ### Minimum Requirements
-        - **OS**: Windows 10 (64-bit) or Windows 11
-        - **RAM**: 8GB
-        - **Storage**: 10GB free space
-        - **CPU**: Dual-core processor
-
-        ### Recommended
-        - **OS**: Windows 11
-        - **RAM**: 16GB or more
-        - **Storage**: 50GB+ free space
-        - **CPU**: Quad-core processor
-        - **GPU**: NVIDIA GPU with CUDA support (optional)
-
-        ## 🐛 Reporting Issues
-
-        Found a bug or need help?
-        - **GitHub Issues**: https://github.com/yourusername/electron-app/issues
-        - **Documentation**: Check the repository README
-
-        ---
-
-        **Download**: Get started with the Windows installer below!
-
-        **Full Changelog**: https://github.com/yourusername/electron-app/compare/v1.0.0...${{ steps.get_version.outputs.VERSION }}
-        EOF
-
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
@@ -533,30 +304,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          artifacts/windows-build/*
-          artifacts/model-archives/*
-          artifacts/model-instructions/*
+          artifacts/**/*
         fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  update-latest-release:
-    name: Update Latest Release Info
-    needs: release
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Update README with latest release
-      run: |
-        sed -i 's|releases/tag/v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/${{ needs.release.outputs.VERSION }}|g' README.md
-
-    - name: Commit README update
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add README.md
-        git commit -m "Update README with release ${{ needs.release.outputs.VERSION }}" || exit 0
-        git push
