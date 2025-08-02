@@ -66,6 +66,58 @@
       "output": "dist/",
       "buildResources": "assets/"
     },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.education",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Education",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ],
     "files": [
       "src/**/*",
       "python-backend/**/*",
@@ -84,12 +136,37 @@
         "from": "start.sh",
         "to": "start.sh",
         "filter": ["**/*"]
-      },
-      {
-        "from": "README.md",
-        "to": "README.md"
       }
     ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "publisherName": "Your Company",
+      "verifyUpdateCodeSignature": false,
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "python-backend/",
+          "to": "python-backend/",
+          "filter": [
+            "**/*",
+            "!venv/",
+            "!temp_*/",
+            "!*.log",
+            "!models/*.pth",
+            "!models/*.pt"
+          ]
+        }
+      ]
+    },
     "mac": {
       "target": [
         {
@@ -144,43 +221,12 @@
         }
       ]
     },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ],
-      "icon": "assets/icon.ico",
-      "publisherName": "Your Company",
-      "verifyUpdateCodeSignature": false,
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-      "extraResources": [
-        {
-          "from": "python-backend/",
-          "to": "python-backend/",
-          "filter": [
-            "**/*",
-            "!venv/",
-            "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
-          ]
-        }
-      ]
-    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Airavat",
-      "include": "assets/installer.nsh",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "deleteAppDataOnUninstall": true
     },
@@ -189,7 +235,6 @@
     },
     "dmg": {
       "title": "${productName} ${version}",
-      "icon": "assets/icon.icns",
       "background": "assets/dmg-background.png",
       "window": {
         "width": 540,
@@ -239,4 +284,5 @@
     "x64",
     "arm64"
   ]
+}
 }
