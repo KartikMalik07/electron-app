@@ -22,12 +22,7 @@ on:
 jobs:
   build:
     name: Build Application
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        # Only build for Windows
-        os: [windows-latest]
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
@@ -53,52 +48,22 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build Electron app (Windows)
-      if: matrix.os == 'windows-latest'
       run: npm run build-win
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-    - name: Build Electron app (macOS)
-      if: matrix.os == 'macos-latest'
-      run: npm run build-mac
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build Electron app (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: npm run build-linux
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Upload Windows artifacts
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-build
         path: |
           dist/*.exe
           dist/*.msi
-
-    - name: Upload macOS artifacts
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v3
-      with:
-        name: macos-build
-        path: dist/*.dmg
-
-    - name: Upload Linux artifacts
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v3
-      with:
-        name: linux-build
-        path: |
-          dist/*.AppImage
-          dist/*.deb
+        retention-days: 30
 
   create-model-archives:
     name: Create Model File Archives
     runs-on: ubuntu-latest
-    # Only run when models should be included
     if: |
       github.event.inputs.include_models == 'true' ||
       (!startsWith(github.ref, 'refs/tags/v1.') && github.event.inputs.version != 'v1.0.0')
@@ -111,7 +76,7 @@ jobs:
       run: |
         mkdir -p model-releases
 
-        # Check if model files exist in the repo (they should for v2.0.0+)
+        # Check if model files exist in the repo
         if [ -f "python-backend/models/siamese_best_model.pth" ] && [ -f "python-backend/models/yolo_best_model.pt" ]; then
           echo "Model files found, creating archives..."
 
@@ -200,7 +165,7 @@ jobs:
         else
           echo "Model files not found in repository. Creating placeholder instructions..."
 
-          # Create download instructions for v2.0.0+ when models aren't in repo yet
+          # Create download instructions when models aren't in repo yet
           cat > model-releases/DOWNLOAD_MODELS.txt << EOF
         🐘 Airavat v2.0.0 - AI Models
 
@@ -228,11 +193,11 @@ jobs:
       with:
         name: model-archives
         path: model-releases/
+        retention-days: 90
 
   create-download-instructions:
     name: Create Model Download Instructions
     runs-on: ubuntu-latest
-    # Only run for v1.0.0 or when models are not included
     if: |
       startsWith(github.ref, 'refs/tags/v1.') ||
       github.event.inputs.version == 'v1.0.0' ||
@@ -341,13 +306,13 @@ jobs:
       with:
         name: model-instructions
         path: model-instructions/
+        retention-days: 30
 
   release:
     name: Create Release
-    needs: [build, create-model-archives, create-download-instructions]
+    needs: [build]
     runs-on: ubuntu-latest
-    # Always run, but conditionally handle artifacts
-    if: always()
+    if: always() && needs.build.result == 'success'
 
     steps:
     - name: Checkout repository
@@ -355,6 +320,9 @@ jobs:
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+        path: ./artifacts
 
     - name: Get version from tag or input
       id: get_version
@@ -484,11 +452,6 @@ jobs:
         - ✅ **Complete Dataset Integration** - 266 individual elephants
         - ✅ **Zero Additional Setup** - Models work out-of-the-box
 
-        ### 🌍 **Cross-Platform Support**
-        - ✅ **Windows** - Full installer and portable versions
-        - ✅ **macOS** - Native DMG with Apple Silicon support
-        - ✅ **Linux** - AppImage and Debian packages
-
         ### ⚡ **Enhanced Features**
         - **GPU Acceleration**: Automatic CUDA detection and usage
         - **Batch Processing**: Process thousands of images efficiently
@@ -501,18 +464,10 @@ jobs:
         - **Installer**: \`Airavat-Setup-${{ steps.get_version.outputs.VERSION }}.exe\`
         - **Portable**: \`Airavat-Portable-${{ steps.get_version.outputs.VERSION }}.exe\`
 
-        ### macOS
-        - **DMG Package**: \`Airavat-${{ steps.get_version.outputs.VERSION }}-mac.dmg\`
-        - **Universal Binary**: Supports both Intel and Apple Silicon
-
-        ### Linux
-        - **AppImage**: \`Airavat-${{ steps.get_version.outputs.VERSION }}-linux.AppImage\`
-        - **Debian**: \`Airavat-${{ steps.get_version.outputs.VERSION }}-linux.deb\`
-
         ## 🚀 Quick Start
 
-        1. **Download** the appropriate package for your OS
-        2. **Install** using your platform's standard method
+        1. **Download** the Windows installer
+        2. **Install** using the setup wizard
         3. **Launch** the application
         4. **Start Identifying** - AI models load automatically!
 
@@ -536,24 +491,73 @@ jobs:
         ## 🆕 New Features
 
         - **One-Click Setup**: Complete installation with models
-        - **Cross-Platform**: Windows, macOS, and Linux support
         - **Enhanced UI**: Improved user experience and performance
         - **Advanced Batch Processing**: Handle large datasets efficiently
         - **Real-time Preview**: See detection results instantly
         - **Detailed Analytics**: Confidence scores and similarity metrics
 
-        ## 🔄 Upgrade from v1.0.0
+        ## 🔧 System Requirements
 
-        If you have v1.0.0 installed:
-        1. Download the new installer for your platform
-        2. Uninstall the previous version (optional)
-        3. Install v${{ steps.get_version.outputs.VERSION }}
-        4. All models and features will be available out-of-the-box
+        ### Minimum Requirements
+        - **OS**: Windows 10 (64-bit) or Windows 11
+        - **RAM**: 8GB
+        - **Storage**: 10GB free space
+        - **CPU**: Dual-core processor
+
+        ### Recommended
+        - **OS**: Windows 11
+        - **RAM**: 16GB or more
+        - **Storage**: 50GB+ free space
+        - **CPU**: Quad-core processor
+        - **GPU**: NVIDIA GPU with CUDA support (optional)
 
         ## 🐛 Reporting Issues
 
+        Found a bug or need help?
         - **GitHub Issues**: https://github.com/yourusername/electron-app/issues
-        - **Documentation**: See repository README
+        - **Documentation**: Check the repository README
 
-        **Full Changelog**: https://github.com/yourusername/electron-app/commits/v${{ steps.get_version.outputs.VERSION }}
+        ---
+
+        **Download**: Get started with the Windows installer below!
+
+        **Full Changelog**: https://github.com/yourusername/electron-app/compare/v1.0.0...${{ steps.get_version.outputs.VERSION }}
         EOF
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: "Airavat ${{ steps.get_version.outputs.VERSION }}"
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/windows-build/*
+          artifacts/model-archives/*
+          artifacts/model-instructions/*
+        fail_on_unmatched_files: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  update-latest-release:
+    name: Update Latest Release Info
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Update README with latest release
+      run: |
+        # Update README.md to point to latest release
+        sed -i 's|releases/tag/v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/${{ steps.get_version.outputs.VERSION }}|g' README.md
+
+    - name: Commit README update
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add README.md
+        git commit -m "Update README with release ${{ steps.get_version.outputs.VERSION }}" || exit 0
+        git push
