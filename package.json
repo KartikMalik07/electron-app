@@ -7,7 +7,6 @@
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
     "build": "npm run build-win",
-    "build-all": "npm run build-win",
     "build-win": "electron-builder --win",
     "build-win-portable": "electron-builder --win --config.win.target=portable",
     "build-win-installer": "electron-builder --win --config.win.target=nsis",
@@ -18,7 +17,7 @@
     "setup-python": "cd python-backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "eslint src/ --ext .js",
-    "prepare-release": "npm run clean && npm install && npm run build-all",
+    "prepare-release": "npm run clean && npm install && npm run build",
     "release-v1": "npm version 1.0.0 && git tag v1.0.0 && git push origin v1.0.0",
     "release-v2": "npm version 2.0.0 && git tag v2.0.0 && git push origin v2.0.0"
   },
@@ -66,58 +65,6 @@
       "output": "dist/",
       "buildResources": "assets/"
     },
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
-        }
-      ],
-      "icon": "assets/icon.icns",
-      "category": "public.app-category.education",
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-      "extraResources": [
-        {
-          "from": "python-backend/",
-          "to": "python-backend/",
-          "filter": [
-            "**/*",
-            "!venv/",
-            "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
-          ]
-        }
-      ]
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": ["x64"]
-        },
-        {
-          "target": "deb",
-          "arch": ["x64"]
-        }
-      ],
-      "category": "Education",
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-      "extraResources": [
-        {
-          "from": "python-backend/",
-          "to": "python-backend/",
-          "filter": [
-            "**/*",
-            "!venv/",
-            "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
-          ]
-        }
-      ],
     "files": [
       "src/**/*",
       "python-backend/**/*",
@@ -167,60 +114,6 @@
         }
       ]
     },
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
-        }
-      ],
-      "icon": "assets/icon.icns",
-      "category": "public.app-category.education",
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-      "extraResources": [
-        {
-          "from": "python-backend/",
-          "to": "python-backend/",
-          "filter": [
-            "**/*",
-            "!venv/",
-            "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
-          ]
-        }
-      ]
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": ["x64"]
-        },
-        {
-          "target": "deb",
-          "arch": ["x64"]
-        }
-      ],
-      "icon": "assets/icon.png",
-      "category": "Education",
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-      "extraResources": [
-        {
-          "from": "python-backend/",
-          "to": "python-backend/",
-          "filter": [
-            "**/*",
-            "!venv/",
-            "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
-          ]
-        }
-      ]
-    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -232,34 +125,6 @@
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
-    },
-    "dmg": {
-      "title": "${productName} ${version}",
-      "background": "assets/dmg-background.png",
-      "window": {
-        "width": 540,
-        "height": 380
-      },
-      "contents": [
-        {
-          "x": 140,
-          "y": 180,
-          "type": "file"
-        },
-        {
-          "x": 400,
-          "y": 180,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ]
-    },
-    "appImage": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
-    },
-    "deb": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "depends": ["python3", "python3-pip"]
     },
     "publish": [
       {
@@ -274,15 +139,5 @@
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
-  },
-  "os": [
-    "win32",
-    "darwin",
-    "linux"
-  ],
-  "cpu": [
-    "x64",
-    "arm64"
-  ]
-}
+  }
 }
