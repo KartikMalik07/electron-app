@@ -298,3 +298,22 @@ def health_check():
             'error': str(e),
             'timestamp': datetime.now().isoformat()
         }), 500
+if __name__ == '__main__':
+    logger.info("🚀 Backend server starting...")
+
+    if not check_python_version():
+        sys.exit(1)
+
+    if not check_required_packages():
+        sys.exit(1)
+
+    check_optional_packages()
+
+    if not setup_directories():
+        sys.exit(1)
+
+    check_model_files()
+    initialize_models()
+
+    # Start Flask server
+    app.run(host='0.0.0.0', port=3001, debug=False)
