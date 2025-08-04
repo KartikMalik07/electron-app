@@ -8,6 +8,7 @@
     "dev": "NODE_ENV=development electron .",
     "build": "npm run build-win",
     "build-win": "electron-builder --win --publish=never",
+    "build-win-with-models": "electron-builder --win --publish=never --config.models=true",
     "build-win-portable": "electron-builder --win --config.win.target=portable --publish=never",
     "build-win-installer": "electron-builder --win --config.win.target=nsis --publish=never",
     "build-and-publish": "electron-builder --win --publish=always",
@@ -19,8 +20,7 @@
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "eslint src/ --ext .js",
     "prepare-release": "npm run clean && npm install && npm run build",
-    "release-v1": "npm version 1.0.0 && git tag v1.0.0 && git push origin v1.0.0",
-    "release-v2": "npm version 2.0.0 && git tag v2.0.0 && git push origin v2.0.0"
+    "release-v1": "npm version 1.0.0 && git tag v1.0.0 && git push origin v1.0.0"
   },
   "keywords": [
     "elephant",
@@ -73,8 +73,6 @@
       "!python-backend/venv/",
       "!python-backend/temp_*/",
       "!python-backend/*.log",
-      "!python-backend/models/*.pth",
-      "!python-backend/models/*.pt",
       "!**/*.pyc",
       "!**/__pycache__/",
       "node_modules/**/*"
@@ -108,9 +106,7 @@
             "**/*",
             "!venv/",
             "!temp_*/",
-            "!*.log",
-            "!models/*.pth",
-            "!models/*.pt"
+            "!*.log"
           ]
         }
       ]

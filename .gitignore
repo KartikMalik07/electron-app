@@ -21,10 +21,10 @@ env/
 .python-version
 
 # Model weights (large files, download separately)
-*.pth
-*.pt
-python-backend/models/siamese_best_model.pth
-python-backend/models/yolo_best_model.pt
+# *.pth
+# *.pt
+# python-backend/models/siamese_best_model.pth
+# python-backend/models/yolo_best_model.pt
 
 # Editor config files
 .vscode/
