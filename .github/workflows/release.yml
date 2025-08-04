@@ -47,7 +47,7 @@ jobs:
           exit 1
         )
 
-        if exist "python-backend\models\yolo_best_model.pt" (
+        if exist "python-backend\models\yolo_best_model.pth" (
           echo "✅ YOLOv8 model found"
           for %%F in ("python-backend\models\yolo_best_model.pt") do echo "   Size: %%~zF bytes"
         ) else (
