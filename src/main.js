@@ -33,23 +33,7 @@ function createWindow() {
 
     // Show loading message if backend isn't ready
     if (!backendReady) {
-      mainWindow.webContents.executeJavaScript(`
-        document.body.innerHTML = \`
-          <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Segoe UI', sans-serif;">
-            <div style="text-align: center; color: white;">
-              <div style="font-size: 3em; margin-bottom: 20px;">🐘</div>
-              <h1 style="margin: 0 0 20px 0;">Starting Airavat...</h1>
-              <p style="font-size: 1.2em; margin: 10px 0;">Initializing Python backend server</p>
-              <div style="margin: 20px 0;">
-                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-              </div>
-              <style>
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-              </style>
-            </div>
-          </div>
-        \`;
-      `);
+      showLoadingScreen();
     }
   });
 
@@ -61,23 +45,74 @@ function createWindow() {
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
-    if (pythonProcess) {
-      console.log('Terminating Python process...');
-      pythonProcess.kill('SIGTERM');
-      setTimeout(() => {
-        if (pythonProcess && !pythonProcess.killed) {
-          pythonProcess.kill('SIGKILL');
-        }
-      }, 5000);
-    }
+    cleanup();
   });
 }
 
+function showLoadingScreen() {
+  mainWindow.webContents.executeJavaScript(`
+    document.body.innerHTML = \`
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Segoe UI', sans-serif;">
+        <div style="text-align: center; color: white;">
+          <div style="font-size: 3em; margin-bottom: 20px;">🐘</div>
+          <h1 style="margin: 0 0 20px 0;">Starting Airavat...</h1>
+          <p style="font-size: 1.2em; margin: 10px 0;">Initializing AI Backend</p>
+          <div style="margin: 20px 0;">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          </div>
+          <p id="status" style="font-size: 1em; margin: 10px 0; opacity: 0.8;">Setting up Python environment...</p>
+          <style>
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          </style>
+        </div>
+      </div>
+    \`;
+  `);
+}
+
+function updateLoadingStatus(message) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.executeJavaScript(`
+      const statusEl = document.getElementById('status');
+      if (statusEl) statusEl.textContent = '${message}';
+    `);
+  }
+}
+
+function getResourcePath(relativePath) {
+  if (app.isPackaged) {
+    // In packaged app, resources are in different location
+    return path.join(process.resourcesPath, relativePath);
+  } else {
+    // In development
+    return path.join(__dirname, '..', relativePath);
+  }
+}
+
 function getPythonCommand() {
-  // Try different Python commands based on platform
-  const commands = process.platform === 'win32'
-    ? ['python', 'python3', 'py']
-    : ['python3', 'python'];
+  // Priority order for finding Python
+  const commands = [];
+
+  if (app.isPackaged) {
+    // First try portable Python bundled with the app
+    const portablePython = path.join(process.resourcesPath, 'python-portable', 'python', 'python.exe');
+    if (fs.existsSync(portablePython)) {
+      commands.push(portablePython);
+    }
+
+    // Try additional bundled Python locations
+    const altPortablePython = path.join(process.resourcesPath, 'app.asar.unpacked', 'python-portable', 'python', 'python.exe');
+    if (fs.existsSync(altPortablePython)) {
+      commands.push(altPortablePython);
+    }
+  }
+
+  // Fallback to system Python
+  if (process.platform === 'win32') {
+    commands.push('python', 'python3', 'py');
+  } else {
+    commands.push('python3', 'python');
+  }
 
   return commands;
 }
@@ -95,6 +130,7 @@ function checkPythonInstallation() {
 
       const cmd = commands[commandIndex];
       console.log(`Checking Python command: ${cmd}`);
+      updateLoadingStatus(`Checking Python: ${path.basename(cmd)}...`);
 
       const testProcess = spawn(cmd, ['--version'], { stdio: 'pipe' });
 
@@ -120,8 +156,9 @@ function checkPythonInstallation() {
 
 async function installPythonDependencies(pythonCmd) {
   console.log('Installing Python dependencies...');
+  updateLoadingStatus('Installing Python dependencies...');
 
-  const backendDir = path.join(__dirname, '../python-backend');
+  const backendDir = getResourcePath('python-backend');
   const requirementsPath = path.join(backendDir, 'requirements.txt');
 
   if (!fs.existsSync(requirementsPath)) {
@@ -155,15 +192,68 @@ async function installPythonDependencies(pythonCmd) {
   });
 }
 
+async function setupModels() {
+  console.log('Setting up AI models...');
+  updateLoadingStatus('Setting up AI models...');
+
+  const modelsDir = getResourcePath('models');
+  const backendModelsDir = getResourcePath('python-backend/models');
+
+  // Create backend models directory
+  fs.ensureDirSync(backendModelsDir);
+
+  if (fs.existsSync(modelsDir)) {
+    // Copy models from bundled location to backend
+    try {
+      fs.copySync(modelsDir, backendModelsDir, { overwrite: true });
+      console.log('✅ Models copied to backend directory');
+
+      // Check which models are available
+      const siameseModel = path.join(backendModelsDir, 'siamese_best_model.pth');
+      const yoloModel = path.join(backendModelsDir, 'yolo_best_model.pt');
+
+      if (fs.existsSync(siameseModel)) {
+        const stats = fs.statSync(siameseModel);
+        console.log(`✅ Siamese model available: ${(stats.size / 1024 / 1024).toFixed(1)}MB`);
+      }
+
+      if (fs.existsSync(yoloModel)) {
+        const stats = fs.statSync(yoloModel);
+        console.log(`✅ YOLO model available: ${(stats.size / 1024 / 1024).toFixed(1)}MB`);
+      }
+
+    } catch (error) {
+      console.warn('Could not copy models:', error.message);
+    }
+  } else {
+    console.log('⚠️ No models directory found - will run in demo mode');
+  }
+
+  // Create placeholder models if none exist (for demo mode)
+  const siameseModel = path.join(backendModelsDir, 'siamese_best_model.pth');
+  const yoloModel = path.join(backendModelsDir, 'yolo_best_model.pt');
+
+  if (!fs.existsSync(siameseModel)) {
+    fs.writeFileSync(siameseModel, '# Placeholder - Download real models from releases');
+    console.log('Created Siamese model placeholder');
+  }
+
+  if (!fs.existsSync(yoloModel)) {
+    fs.writeFileSync(yoloModel, '# Placeholder - Download real models from releases');
+    console.log('Created YOLO model placeholder');
+  }
+}
+
 async function startPythonBackend() {
   console.log('🐘 Starting Airavat Backend v1.0.0');
+  updateLoadingStatus('Starting Python backend...');
 
   try {
     // Check Python installation
     const pythonCmd = await checkPythonInstallation();
     console.log(`Using Python command: ${pythonCmd}`);
 
-    const backendDir = path.join(__dirname, '../python-backend');
+    const backendDir = getResourcePath('python-backend');
     const backendScript = path.join(backendDir, 'backend_server.py');
 
     // Check if backend script exists
@@ -171,11 +261,17 @@ async function startPythonBackend() {
       throw new Error(`Backend script not found: ${backendScript}`);
     }
 
-    // Try to install dependencies (non-blocking)
-    console.log('Checking Python dependencies...');
-    const depsInstalled = await installPythonDependencies(pythonCmd);
-    if (!depsInstalled) {
-      console.warn('⚠️  Some Python dependencies might be missing');
+    // Setup models
+    await setupModels();
+
+    // Try to install dependencies (non-blocking for packaged apps)
+    if (!app.isPackaged) {
+      console.log('Checking Python dependencies...');
+      updateLoadingStatus('Installing dependencies...');
+      const depsInstalled = await installPythonDependencies(pythonCmd);
+      if (!depsInstalled) {
+        console.warn('⚠️  Some Python dependencies might be missing');
+      }
     }
 
     // Create necessary directories
@@ -188,15 +284,27 @@ async function startPythonBackend() {
       }
     });
 
+    // Set environment variables for Python
+    const env = {
+      ...process.env,
+      PYTHONPATH: backendDir,
+      PYTHONUNBUFFERED: '1',
+      PYTHONDONTWRITEBYTECODE: '1'
+    };
+
+    // Add portable Python to PATH if available
+    if (app.isPackaged && pythonCmd.includes('python-portable')) {
+      const pythonPortableDir = path.dirname(pythonCmd);
+      env.PATH = `${pythonPortableDir};${env.PATH}`;
+    }
+
     // Start Python backend
     console.log('🚀 Launching Python backend server...');
+    updateLoadingStatus('Launching backend server...');
+
     pythonProcess = spawn(pythonCmd, [backendScript], {
       cwd: backendDir,
-      env: {
-        ...process.env,
-        PYTHONPATH: backendDir,
-        PYTHONUNBUFFERED: '1'
-      },
+      env,
       stdio: 'pipe'
     });
 
@@ -207,10 +315,13 @@ async function startPythonBackend() {
       console.log(`🐍 Python: ${output.trim()}`);
 
       // Check if backend is ready
-      if (output.includes('Backend server starting') || output.includes('Running on')) {
+      if (output.includes('Backend server starting') ||
+          output.includes('Running on') ||
+          output.includes('Starting Flask server')) {
         backendStarted = true;
         backendReady = true;
         console.log('✅ Python backend is ready!');
+        updateLoadingStatus('Backend ready! Loading interface...');
 
         // Reload the main window content
         if (mainWindow && !mainWindow.isDestroyed()) {
@@ -218,6 +329,15 @@ async function startPythonBackend() {
             mainWindow.reload();
           }, 1000);
         }
+      }
+
+      // Update loading status based on output
+      if (output.includes('Installing')) {
+        updateLoadingStatus('Installing dependencies...');
+      } else if (output.includes('Loading')) {
+        updateLoadingStatus('Loading AI models...');
+      } else if (output.includes('Server initialization complete')) {
+        updateLoadingStatus('Server ready!');
       }
     });
 
@@ -228,6 +348,7 @@ async function startPythonBackend() {
       // Check for import errors
       if (output.includes('ModuleNotFoundError') || output.includes('ImportError')) {
         console.error('❌ Missing Python dependencies detected');
+        updateLoadingStatus('Some dependencies missing - will use demo mode');
       }
     });
 
@@ -250,7 +371,7 @@ async function startPythonBackend() {
     // Wait for backend to start (with timeout)
     return new Promise((resolve) => {
       let attempts = 0;
-      const maxAttempts = 10; // 30 seconds total
+      const maxAttempts = 15; // 45 seconds total
 
       const checkBackend = setInterval(() => {
         attempts++;
@@ -261,6 +382,7 @@ async function startPythonBackend() {
         } else if (attempts >= maxAttempts) {
           clearInterval(checkBackend);
           console.warn('⚠️  Backend startup timeout - continuing anyway');
+          // The backend might still be starting in demo mode
           resolve(false);
         }
       }, 3000);
@@ -282,29 +404,50 @@ function showBackendError() {
             <div style="font-size: 3em; margin-bottom: 20px;">⚠️</div>
             <h1 style="margin: 0 0 20px 0;">Backend Startup Failed</h1>
             <p style="font-size: 1.1em; margin: 20px 0; line-height: 1.6;">
-              The Python backend server failed to start. This could be due to:
+              The AI backend failed to start. The app may run with limited functionality:
             </p>
             <ul style="text-align: left; display: inline-block; margin: 20px 0;">
-              <li>Missing Python installation (3.8+ required)</li>
-              <li>Missing Python dependencies</li>
-              <li>Missing AI model files (.pth and .pt files)</li>
-              <li>Port 3001 already in use</li>
+              <li>✅ Interface will still work</li>
+              <li>⚠️ AI features will use demo mode</li>
+              <li>⚠️ No real elephant identification</li>
+              <li>⚠️ Mock detection results only</li>
             </ul>
             <div style="margin: 30px 0;">
               <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1em; margin-right: 10px;">
                 🔄 Retry
               </button>
-              <button onclick="require('electron').shell.openExternal('https://github.com/yourusername/electron-app#setup')" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1em;">
-                📖 Setup Guide
+              <button onclick="continueWithDemo()" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1em;">
+                📱 Continue in Demo Mode
               </button>
             </div>
             <p style="font-size: 0.9em; margin-top: 30px; opacity: 0.8;">
-              Check the console logs for detailed error information
+              Check console logs for detailed error information
             </p>
           </div>
         </div>
+        <script>
+          function continueWithDemo() {
+            // Set a flag and reload
+            localStorage.setItem('demo-mode', 'true');
+            location.reload();
+          }
+        </script>
       \`;
     `);
+  }
+}
+
+function cleanup() {
+  if (pythonProcess) {
+    console.log('🛑 Shutting down Python backend...');
+    pythonProcess.kill('SIGTERM');
+
+    // Force kill after 5 seconds
+    setTimeout(() => {
+      if (pythonProcess && !pythonProcess.killed) {
+        pythonProcess.kill('SIGKILL');
+      }
+    }, 5000);
   }
 }
 
@@ -363,7 +506,9 @@ ipcMain.handle('get-system-info', async () => {
       arch: process.arch,
       nodeVersion: process.version,
       electronVersion: process.versions.electron,
-      backendStatus: backendReady ? 'Ready' : 'Starting...'
+      backendStatus: backendReady ? 'Ready' : 'Starting...',
+      isPackaged: app.isPackaged,
+      resourcesPath: app.isPackaged ? process.resourcesPath : 'Development'
     };
   } catch (error) {
     console.error('Error getting system info:', error);
@@ -411,17 +556,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (pythonProcess) {
-    console.log('🛑 Shutting down Python backend...');
-    pythonProcess.kill('SIGTERM');
-
-    // Force kill after 5 seconds
-    setTimeout(() => {
-      if (pythonProcess && !pythonProcess.killed) {
-        pythonProcess.kill('SIGKILL');
-      }
-    }, 5000);
-  }
+  cleanup();
 
   if (process.platform !== 'darwin') {
     app.quit();

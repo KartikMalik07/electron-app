@@ -8,19 +8,20 @@
     "dev": "NODE_ENV=development electron .",
     "build": "npm run build-win",
     "build-win": "electron-builder --win --publish=never",
-    "build-win-with-models": "electron-builder --win --publish=never --config.models=true",
+    "build-win-with-models": "npm run download-models && electron-builder --win --publish=never",
     "build-win-portable": "electron-builder --win --config.win.target=portable --publish=never",
     "build-win-installer": "electron-builder --win --config.win.target=nsis --publish=never",
-    "build-and-publish": "electron-builder --win --publish=always",
+    "build-and-publish": "npm run download-models && electron-builder --win --publish=always",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --publish=never",
     "postinstall": "electron-builder install-app-deps",
-    "clean": "rimraf dist/ node_modules/ python-backend/venv/ python-backend/temp_*/ python-backend/*.log",
-    "setup-python": "cd python-backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "prebuild": "npm run setup-python-portable",
+    "setup-python-portable": "node scripts/setup-python-portable.js",
+    "download-models": "node scripts/download-models.js",
+    "clean": "rimraf dist/ node_modules/ python-backend/venv/ python-backend/temp_*/ python-backend/*.log python-portable/",
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "eslint src/ --ext .js",
-    "prepare-release": "npm run clean && npm install && npm run build",
-    "release-v1": "npm version 1.0.0 && git tag v1.0.0 && git push origin v1.0.0"
+    "prepare-release": "npm run clean && npm install && npm run build-win-with-models"
   },
   "keywords": [
     "elephant",
@@ -53,10 +54,12 @@
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
     "eslint": "^8.56.0",
+    "extract-zip": "^2.0.1",
+    "node-fetch": "^3.3.2",
     "rimraf": "^5.0.5"
   },
   "dependencies": {
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.3.0"
   },
   "build": {
     "appId": "com.yourcompany.airavat",
@@ -69,7 +72,9 @@
     "files": [
       "src/**/*",
       "python-backend/**/*",
+      "python-portable/**/*",
       "assets/**/*",
+      "models/**/*",
       "!python-backend/venv/",
       "!python-backend/temp_*/",
       "!python-backend/*.log",
@@ -81,18 +86,18 @@
       {
         "from": "start.sh",
         "to": "start.sh",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "publisherName": "Your Company",
@@ -108,6 +113,20 @@
             "!temp_*/",
             "!*.log"
           ]
+        },
+        {
+          "from": "python-portable/",
+          "to": "python-portable/",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "models/",
+          "to": "models/",
+          "filter": [
+            "**/*"
+          ]
         }
       ]
     },
@@ -118,7 +137,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Airavat",
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "deleteAppDataOnUninstall": true
+      "deleteAppDataOnUninstall": true,
+      "include": "scripts/installer.nsh"
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
