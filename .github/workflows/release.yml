@@ -65,7 +65,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build Electron app with Models (Windows)
-      run: npm run build-win-complete
+      run: npm run build-win
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
