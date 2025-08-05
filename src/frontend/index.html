@@ -1169,37 +1169,34 @@
         }
 
         function displayBatchResults(results) {
-            const summaryContainer = document.getElementById('batchSummary');
-            const resultsContainer = document.getElementById('batchResults');
-            const statsContainer = document.getElementById('batchStats');
+            const container = document.getElementById('batchResultsList');
+            container.innerHTML = '';
 
-            // Display summary stats
-            statsContainer.innerHTML = `
-                <div class="stat-item">
-                    <span class="stat-number">${results.total_images || 0}</span>
-                    <span>Images Processed</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">${results.groups_created || 0}</span>
-                    <span>Groups Created</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">${results.processing_time || 0}s</span>
-                    <span>Processing Time</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">${results.accuracy || 0}%</span>
-                    <span>Avg Confidence</span>
-                </div>
-            `;
-
-            summaryContainer.style.display = 'block';
-            resultsContainer.style.display = 'block';
-
-            if (results.download_url) {
-                document.getElementById('downloadResultsBtn').disabled = false;
-                document.getElementById('downloadResultsBtn').setAttribute('data-url', results.download_url);
+            if (results.groups && results.groups.length > 0) {
+                results.groups.forEach(group => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'result-item';
+                    groupDiv.innerHTML = `
+                        <h4>ParallelGroup ${group.name}
+                           <span style="font-size: 0.8em; color: #666;">(${group.size} images | Avg: ${group.confidence.toFixed(1)}%)</span>
+                        </h4>
+                        <div style="display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap;">
+                            ${group.images.map(img => `
+                                <div style="text-align: center;">
+                                    <img src="data:image/jpeg;base64,${img.thumbnail}"
+                                         style="width: 100px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px;">
+                                    <div style="font-size: 0.8em; color: #333;">${img.elephant_id || 'Unknown'}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    container.appendChild(groupDiv);
+                });
+            } else {
+                container.innerHTML = '<p>No groups found for the selected images.</p>';
             }
+
+            resultsContainer.style.display = 'block';
         }
 
         async function downloadBatchResults() {
