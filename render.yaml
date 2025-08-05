@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: airavat-backend
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: "python download_models.py && pip install -r requirements.txt"
+    startCommand: "uvicorn backend_server:app --host 0.0.0.0 --port $PORT --workers 1"
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: MAX_CONTENT_LENGTH
+        value: "209715200"  # 200MB
+      - key: ENVIRONMENT
+        value: "production"
+    autoDeploy: false
+    disk:
+      name: airavat-disk
+      mountPath: /opt/render/project/src
+      sizeGB: 10
+    healthCheckPath: /api/health

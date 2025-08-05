@@ -1,42 +1,40 @@
-# Core ML and Computer Vision
-flask>=2.0.0
-flask-cors>=3.0.0
-werkzeug>=2.0.0
+# Core web framework - FastAPI
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+
+# Deep Learning - PyTorch
 torch
 torchvision
-opencv-python
-numpy
+torchaudio
+
+# Computer Vision
+opencv-python-headless
 Pillow
 
-# YOLOv8 and Object Detection
+# YOLO
 ultralytics
-supervision
 
-# EfficientNet for Siamese Network
+# EfficientNet (if available)
 efficientnet-pytorch
 
-# Web Framework and API
-flask
-flask-cors
-werkzeug
+# Scientific Computing
+numpy
+scipy
 
-# Image Processing and Utilities
+# Image Processing
 scikit-image
-matplotlib
-seaborn
 
-# Data Handling
+# Data handling
 pandas
-scikit-learn
 
-# File and System Operations
+# HTTP and networking
+requests
+
+# Utilities
+python-dotenv
 pathlib2
-tqdm
-psutil
 
-# Optional GPU Support
-# Uncomment if you have CUDA GPU:
-# torch-audio
-# torchaudio
-
-# Development and Debugging (optional)
+# For better logging
+colorlog

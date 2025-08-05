@@ -1,0 +1,14 @@
+{
+  "storage_type": "github_releases",
+  "repo_name": "KartikMalik07/electron-app",
+  "release_tag": "models-v1.0.0",
+  "download_urls": {
+    "siamese_best_model.pth": "https://github.com/KartikMalik07/electron-app/releases/download/models-v1.0.0/siamese_best_model.pth",
+    "yolo_best_model.pt": "https://github.com/KartikMalik07/electron-app/releases/download/models-v1.0.0/yolo_best_model.pt"
+  },
+  "upload_date": "2025-08-05 22:43:37.711822",
+  "model_hashes": {
+    "siamese_best_model.pth": "7fd8e97837158bb7bb3dacbe2740566341dc90fac0d44c4936b3654968f0ac82",
+    "yolo_best_model.pt": "77a7cf69c97e5fd973264ac35e1fa5f443aebc2e3dd0d528647dd5e4bdde83a9"
+  }
+}
